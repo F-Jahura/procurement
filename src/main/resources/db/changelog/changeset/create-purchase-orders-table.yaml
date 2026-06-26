@@ -1,0 +1,54 @@
+databaseChangeLog:
+  - changeSet:
+      id: 3
+      author: fatema
+      changes:
+        - createTable:
+            tableName: purchase_orders
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: order_number
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: order_date
+                  type: DATE
+              - column:
+                  name: delivery_date
+                  type: DATE
+              - column:
+                  name: total_amount
+                  type: DECIMAL(10,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+              - column:
+                  name: notes
+                  type: TEXT
+              - column:
+                  name: supplier_id
+                  type: BIGINT
+              - column:
+                  name: created_at
+                  type: DATETIME
+              - column:
+                  name: updated_at
+                  type: DATETIME
+        - addForeignKeyConstraint:
+            baseTableName: purchase_orders
+            baseColumnNames: supplier_id
+            referencedTableName: suppliers
+            referencedColumnNames: id
+            constraintName: fk_purchase_orders_supplier
+            onDelete: CASCADE

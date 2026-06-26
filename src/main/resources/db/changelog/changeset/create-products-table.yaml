@@ -1,0 +1,56 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2
+      author: fatema
+      changes:
+        - createTable:
+            tableName: products
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sku
+                  type: VARCHAR(50)
+              - column:
+                  name: description
+                  type: VARCHAR(500)
+              - column:
+                  name: price
+                  type: DECIMAL(10,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: min_stock
+                  type: INT
+              - column:
+                  name: current_stock
+                  type: INT
+              - column:
+                  name: unit
+                  type: VARCHAR(50)
+              - column:
+                  name: supplier_id
+                  type: BIGINT
+              - column:
+                  name: created_at
+                  type: DATETIME
+              - column:
+                  name: updated_at
+                  type: DATETIME
+        - addForeignKeyConstraint:
+            baseTableName: products
+            baseColumnNames: supplier_id
+            referencedTableName: suppliers
+            referencedColumnNames: id
+            constraintName: fk_products_supplier
+            onDelete: CASCADE

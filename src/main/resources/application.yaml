@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: procurement
+
+  profiles:
+    active: h2
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  liquibase:
+    enabled: true
+    change-log: classpath:/db/changelog/db.changelog-master.yaml
+
+logging:
+  level:
+    com.fatema.procurement: DEBUG
+    liquibase: INFO
+

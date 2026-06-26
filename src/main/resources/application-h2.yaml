@@ -1,0 +1,12 @@
+spring:
+  config:
+    activate:
+      on-profile: h2
+  datasource:
+    url: jdbc:h2:file:./db
+    username: u
+    password: 1
+    driver-class-name: org.h2.Driver
+  h2:
+    console:
+      enabled: true

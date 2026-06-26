@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Заказ | Procurement Monitor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand" href="/">📦 Procurement Monitor</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item"><a class="nav-link" href="/">Главная</a></li>
+                <li class="nav-item"><a class="nav-link" href="/suppliers">Поставщики</a></li>
+                <li class="nav-item"><a class="nav-link" href="/products">Товары</a></li>
+                <li class="nav-item"><a class="nav-link active" href="/orders">Заказы</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <h2 th:text="${order.id} ? 'Редактировать заказ' : 'Новый заказ'">Форма</h2>
+
+    <form th:action="${order.id} ? @{/orders/update/{id}(id=${order.id})} : @{/orders}"
+          th:object="${order}" method="post" class="mt-4">
+
+        <!-- Основная информация о заказе -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="orderNumber" class="form-label">Номер заказа</label>
+                    <input type="text" class="form-control" id="orderNumber"
+                           th:field="*{orderNumber}"
+                           th:value="${order.orderNumber != null ? order.orderNumber : 'Сгенерируется автоматически'}"
+                           readonly>
+                    <small class="text-muted">Номер будет сгенерирован автоматически</small>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="supplierId" class="form-label">Поставщик</label>
+                    <select class="form-select" id="supplierId" name="supplierId">
+                        <option value="">Выберите поставщика</option>
+                        <option th:each="s : ${suppliers}"
+                                th:value="${s.id}"
+                                th:text="${s.name}"
+                                th:selected="${order.supplier != null && order.supplier.id == s.id}">
+                        </option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label for="orderDate" class="form-label">Дата заказа</label>
+                    <input type="date" class="form-control" id="orderDate"
+                           th:field="*{orderDate}"
+                           th:value="${#temporals.format(order.orderDate, 'yyyy-MM-dd')}">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label for="deliveryDate" class="form-label">Дата доставки</label>
+                    <input type="date" class="form-control" id="deliveryDate" th:field="*{deliveryDate}">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label for="totalAmount" class="form-label">Общая сумма</label>
+                    <input type="text" class="form-control" id="totalAmount"
+                           th:field="*{totalAmount}"
+                           th:value="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 2, 'POINT')}"
+                           readonly>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="status" class="form-label">Статус</label>
+            <select class="form-select" id="status" th:field="*{status}">
+                <option th:each="s : ${T(com.fatema.procurement.entity.OrderStatus).values()}"
+                        th:value="${s}"
+                        th:text="${s}">DRAFT</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label for="notes" class="form-label">Примечания</label>
+            <textarea class="form-control" id="notes" th:field="*{notes}" rows="2"></textarea>
+        </div>
+
+        <!-- ========== БЛОК ТОВАРОВ В ЗАКАЗЕ ========== -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-box-seam"></i> Товары в заказе</h5>
+            </div>
+            <div class="card-body">
+                <div id="order-items">
+                    <!-- Первая строка товара (шаблон) -->
+                    <div class="row mb-2 item-row align-items-end">
+                        <div class="col-md-5">
+                            <label class="form-label">Товар</label>
+                            <select class="form-select product-select" name="productIds">
+                                <option value="">Выберите товар</option>
+                                <option th:each="p : ${products}"
+                                        th:value="${p.id}"
+                                        th:text="${p.name + ' (остаток: ' + p.currentStock + ')'}">
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Количество</label>
+                            <input type="number" class="form-control quantity-input"
+                                   name="quantities" placeholder="Кол-во" min="1" value="1">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Сумма</label>
+                            <input type="text" class="form-control item-total"
+                                   placeholder="Сумма" readonly value="0.00">
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="button" class="btn btn-danger remove-item w-100">✕</button>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" class="btn btn-secondary mt-2" id="add-item">
+                    <i class="bi bi-plus-circle"></i> Добавить товар
+                </button>
+            </div>
+        </div>
+
+        <!-- Кнопки -->
+        <button type="submit" class="btn btn-success">
+            <i class="bi bi-check2"></i> Сохранить заказ
+        </button>
+        <a href="/orders" class="btn btn-secondary">
+            <i class="bi bi-x"></i> Отмена
+        </a>
+    </form>
+</div>
+
+<!-- ========== JAVASCRIPT ========== -->
+<script>
+    // 1. Добавление новой строки товара
+    document.getElementById('add-item').addEventListener('click', function() {
+        const originalRow = document.querySelector('.item-row');
+        const newRow = originalRow.cloneNode(true);
+
+        // Очищаем значения в новой строке
+        newRow.querySelectorAll('input').forEach(inp => {
+            if (inp.classList.contains('item-total')) {
+                inp.value = '0.00';
+            } else {
+                inp.value = '';
+            }
+        });
+        newRow.querySelector('select').selectedIndex = 0;
+
+        document.getElementById('order-items').appendChild(newRow);
+    });
+
+    // 2. Удаление строки товара
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-item') || e.target.closest('.remove-item')) {
+            const button = e.target.classList.contains('remove-item') ? e.target : e.target.closest('.remove-item');
+            const rows = document.querySelectorAll('.item-row');
+            if (rows.length > 1) {
+                button.closest('.item-row').remove();
+                calculateTotalSum();
+            } else {
+                alert('Должен быть хотя бы один товар!');
+            }
+        }
+    });
+
+    // 3. Автоматический расчёт суммы строки при изменении количества или выборе товара
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('product-select') || e.target.classList.contains('quantity-input')) {
+            calculateRowTotal(e.target.closest('.item-row'));
+            calculateTotalSum();
+        }
+    });
+
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('quantity-input')) {
+            calculateRowTotal(e.target.closest('.item-row'));
+            calculateTotalSum();
+        }
+    });
+
+    // 4. Расчёт суммы для одной строки
+    function calculateRowTotal(row) {
+        const select = row.querySelector('.product-select');
+        const quantityInput = row.querySelector('.quantity-input');
+        const totalInput = row.querySelector('.item-total');
+
+        if (select && select.value && quantityInput && quantityInput.value) {
+            const selectedOption = select.options[select.selectedIndex];
+            // Извлекаем цену из текста опции (формат: "Название (остаток: X) — цена: Y")
+            // Ищем цену в data-атрибуте или парсим из текста
+            const priceText = selectedOption.getAttribute('data-price');
+            let price = 0;
+            if (priceText) {
+                price = parseFloat(priceText);
+            } else {
+                // Если data-price нет, пробуем найти цену в тексте
+                const match = selectedOption.text.match(/—\s*(\d+[\.,]?\d*)\s*₽/);
+                if (match) {
+                    price = parseFloat(match[1].replace(',', '.'));
+                }
+            }
+
+            const quantity = parseInt(quantityInput.value) || 0;
+            const total = price * quantity;
+            totalInput.value = total.toFixed(2);
+        } else {
+            totalInput.value = '0.00';
+        }
+    }
+
+    // 5. Расчёт общей суммы всех товаров
+    function calculateTotalSum() {
+        const rows = document.querySelectorAll('.item-row');
+        let total = 0;
+        rows.forEach(row => {
+            const totalInput = row.querySelector('.item-total');
+            if (totalInput && totalInput.value) {
+                total += parseFloat(totalInput.value) || 0;
+            }
+        });
+        document.getElementById('totalAmount').value = total.toFixed(2);
+    }
+
+    // 6. Инициализация: расчёт при загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+        const rows = document.querySelectorAll('.item-row');
+        rows.forEach(row => {
+            calculateRowTotal(row);
+        });
+        calculateTotalSum();
+    });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Заказы | Procurement Monitor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand" href="/">📦 Procurement Monitor</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item"><a class="nav-link" href="/">Главная</a></li>
+                <li class="nav-item"><a class="nav-link" href="/suppliers">Поставщики</a></li>
+                <li class="nav-item"><a class="nav-link" href="/products">Товары</a></li>
+                <li class="nav-item"><a class="nav-link active" href="/orders">Заказы</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>📋 Заказы</h2>
+        <a href="/orders/new" class="btn btn-primary">➕ Создать заказ</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Номер заказа</th>
+                <th>Поставщик</th>
+                <th>Дата заказа</th>
+                <th>Дата доставки</th>
+                <th>Сумма</th>
+                <th>Статус</th>
+                <th>Действия</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="o : ${orders}">
+                <td th:text="${o.id}">1</td>
+                <td th:text="${o.orderNumber}">PO-001</td>
+                <td th:text="${o.supplier != null ? o.supplier.name : '-'}">Поставщик</td>
+                <td th:text="${o.orderDate}">2024-06-01</td>
+                <td th:text="${o.deliveryDate != null ? o.deliveryDate : '-'}">2024-07-01</td>
+                <td th:text="'₽' + ${#numbers.formatDecimal(o.totalAmount, 0, 'COMMA', 2, 'POINT')}">0</td>
+                <td>
+                            <span class="badge"
+                                  th:class="${o.status == 'DRAFT' ? 'bg-secondary' :
+                                           o.status == 'SENT' ? 'bg-info' :
+                                           o.status == 'CONFIRMED' ? 'bg-primary' :
+                                           o.status == 'SHIPPED' ? 'bg-warning text-dark' :
+                                           o.status == 'DELIVERED' ? 'bg-success' : 'bg-danger'}"
+                                  th:text="${o.status}">DRAFT</span>
+                </td>
+                <td>
+                    <a th:href="@{/orders/edit/{id}(id=${o.id})}" class="btn btn-sm btn-warning">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <a th:href="@{/orders/delete/{id}(id=${o.id})}"
+                       class="btn btn-sm btn-danger"
+                       onclick="return confirm('Удалить заказ?')">
+                        <i class="bi bi-trash"></i>
+                    </a>
+                </td>
+            </tr>
+            <tr th:if="${orders.isEmpty()}">
+                <td colspan="8" class="text-center text-muted">Нет заказов. Создайте первый!</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
