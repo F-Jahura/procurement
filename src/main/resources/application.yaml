@@ -16,6 +16,10 @@ spring:
   liquibase:
     enabled: true
     change-log: classpath:/db/changelog/db.changelog-master.yaml
+# ====== НАСТРОЙКИ JWT (ДОБАВЛЕНЫ) ======
+app:
+  jwtSecret: procurementSecretKey123456789012345678901234567890
+  jwtExpirationMs: 86400000  # 24 часа
 
 logging:
   level:

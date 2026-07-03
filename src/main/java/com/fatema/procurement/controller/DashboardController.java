@@ -24,4 +24,20 @@ public class DashboardController {
     public String dashboard(Model model) {
         return home(model);
     }
+
+    // Страница входа (не перенаправляем, а показываем форму)
+    @GetMapping("/login")
+    public String login() {
+        return "login";
+    }
+
+    @GetMapping("/auth/login")
+    public String authLogin() {
+        return "login";
+    }
+
+    @GetMapping("/auth/logout")
+    public String authLogout() {
+        return "redirect:/logout";
+    }
 }

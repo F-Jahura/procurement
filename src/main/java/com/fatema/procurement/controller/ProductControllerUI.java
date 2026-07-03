@@ -1,15 +1,19 @@
 package com.fatema.procurement.controller;
 
+import com.fatema.procurement.dto.ImportResultDTO;
 import com.fatema.procurement.dto.ProductFilterDTO;
 import com.fatema.procurement.entity.Product;
-import com.fatema.procurement.service.ProductService;
-import com.fatema.procurement.service.SalesCalculationService;
-import com.fatema.procurement.service.SupplierService;
+import com.fatema.procurement.repository.ProductRepository;
+import com.fatema.procurement.service.*;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +30,19 @@ public class ProductControllerUI {
 
     @Autowired
     private SalesCalculationService salesCalculationService;
+
+    @Autowired
+    private ExcelImportService excelImportService;
+    @Autowired
+    private ExcelExportService excelExportService;
+    @Autowired
+    private ProductRepository productRepository;
+
+    @GetMapping("/export/excel")
+    public void exportProducts(HttpServletResponse response) throws IOException {
+        List<Product> products = productRepository.findAll();
+        excelExportService.exportProducts(products, response);
+    }
 
     @GetMapping
     public String listProducts(
@@ -68,24 +85,6 @@ public class ProductControllerUI {
 
         return "products/list";
     }
-
-    /*@GetMapping
-    public String listProducts(
-            @RequestParam(required = false) String name,
-            @RequestParam(required = false) Long supplierId,
-            @RequestParam(required = false) Integer minStock,
-            @RequestParam(required = false) Boolean lowStockOnly,
-            @RequestParam(required = false) Integer salesPeriodMonths,
-            Model model) {
-
-        // ВРЕМЕННО: просто показываем все товары без продаж
-        List<Product> products = productService.getAllProducts();
-        model.addAttribute("products", products);
-        model.addAttribute("suppliers", supplierService.getAllSuppliers());
-        model.addAttribute("salesMap", new HashMap<>());
-
-        return "products/list";
-    }*/
     @GetMapping("/new")
     public String showCreateForm(Model model) {
         model.addAttribute("product", new Product());
@@ -125,6 +124,13 @@ public class ProductControllerUI {
     @GetMapping("/delete/{id}")
     public String deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
+        return "redirect:/products";
+    }
+
+    @PostMapping("/import")
+    public String importProducts(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes) {
+        ImportResultDTO result = excelImportService.importProducts(file);
+        redirectAttributes.addFlashAttribute("importResult", result);
         return "redirect:/products";
     }
 }

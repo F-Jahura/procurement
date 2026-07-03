@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <title>Поставщики | Procurement Monitor</title>
@@ -10,13 +11,26 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
         <a class="navbar-brand" href="/">📦 Procurement Monitor</a>
-        <div class="collapse navbar-collapse">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
                 <li class="nav-item"><a class="nav-link" href="/">Главная</a></li>
                 <li class="nav-item"><a class="nav-link active" href="/suppliers">Поставщики</a></li>
                 <li class="nav-item"><a class="nav-link" href="/products">Товары</a></li>
                 <li class="nav-item"><a class="nav-link" href="/orders">Заказы</a></li>
             </ul>
+
+            <!-- ====== КНОПКА ВЫХОДА (ДОБАВЛЕНА) ====== -->
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3 text-white-50" sec:authentication="name">
+                    <i class="bi bi-person-circle"></i> <span sec:authentication="name">Пользователь</span>
+                </span>
+                <a href="/auth/logout" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-box-arrow-right"></i> Выйти
+                </a>
+            </div>
         </div>
     </div>
 </nav>
@@ -70,6 +84,66 @@
         </div>
     </div>
 
+    <!-- ====== КАРТОЧКА: ИМПОРТ + ЭКСПОРТ EXCEL ====== -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <!-- Левая часть: импорт -->
+                <div class="col-md-6">
+                    <form action="/suppliers/import" method="post" enctype="multipart/form-data" class="row g-2 align-items-end">
+                        <div class="col-12">
+                            <label class="form-label">📤 Загрузить поставщиков из Excel</label>
+                            <input type="file" class="form-control" name="file" accept=".xlsx,.xls" required>
+                        </div>
+                        <div class="col-6">
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-upload"></i> Загрузить
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <a href="#" class="btn btn-outline-secondary w-100">
+                                <i class="bi bi-download"></i> Скачать шаблон
+                            </a>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Правая часть: экспорт -->
+                <div class="col-md-6">
+                    <div class="border-start ps-3" style="border-color: #dee2e6 !important;">
+                        <label class="form-label">📥 Выгрузить данные</label>
+                        <div class="d-grid gap-2">
+                            <a th:href="@{/suppliers/export/excel}" class="btn btn-success">
+                                <i class="bi bi-file-earmark-excel"></i> Выгрузить Excel
+                            </a>
+                        </div>
+                        <small class="text-muted">Выгружает всех поставщиков в формате .xlsx</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Блок результатов импорта -->
+    <div th:if="${importResult}" class="alert alert-info mt-3">
+        <h5>📊 Результат импорта:</h5>
+        <p>Всего строк: <strong th:text="${importResult.totalRows}">0</strong></p>
+        <p>Успешно: <strong th:text="${importResult.successCount}">0</strong></p>
+        <p>Ошибок: <strong th:text="${importResult.errorCount}">0</strong></p>
+        <div th:if="${importResult.hasErrors()}">
+            <h6>❌ Ошибки:</h6>
+            <ul>
+                <li th:each="err : ${importResult.errors}" th:text="${err}"></li>
+            </ul>
+        </div>
+        <div th:if="${not importResult.errors.isEmpty()}">
+            <h6>✅ Успешно добавлено:</h6>
+            <ul>
+                <li th:each="msg : ${importResult.messages}" th:text="${msg}"></li>
+            </ul>
+        </div>
+    </div>
+
     <!-- Таблица поставщиков -->
     <div class="table-responsive">
         <table class="table table-striped table-hover">
@@ -95,9 +169,9 @@
                 <td th:text="${s.email}">Email</td>
                 <td th:text="${s.phone}">Телефон</td>
                 <td>
-                            <span class="badge" th:class="${s.active} ? 'bg-success' : 'bg-danger'"
-                                  th:text="${s.active} ? 'Активен' : 'Неактивен'">
-                            </span>
+                    <span class="badge" th:class="${s.active} ? 'bg-success' : 'bg-danger'"
+                          th:text="${s.active} ? 'Активен' : 'Неактивен'">
+                    </span>
                 </td>
                 <td th:text="${#temporals.format(s.createdAt, 'dd.MM.yyyy')}">01.01.2024</td>
                 <td>

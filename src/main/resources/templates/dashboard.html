@@ -26,6 +26,15 @@
                     <a class="nav-link" href="/orders">Заказы</a>
                 </li>
             </ul>
+            <!-- ====== КНОПКА ВЫХОДА (ДОБАВЛЕНА) ====== -->
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3 text-white-50" sec:authentication="name">
+                    <i class="bi bi-person-circle"></i> <span sec:authentication="name">Пользователь</span>
+                </span>
+                <a href="/auth/logout" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-box-arrow-right"></i> Выйти
+                </a>
+            </div>
         </div>
     </div>
 </nav>

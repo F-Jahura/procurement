@@ -17,6 +17,15 @@
                 <li class="nav-item"><a class="nav-link active" href="/products">Товары</a></li>
                 <li class="nav-item"><a class="nav-link" href="/orders">Заказы</a></li>
             </ul>
+            <!-- ====== КНОПКА ВЫХОДА (ДОБАВЛЕНА) ====== -->
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3 text-white-50" sec:authentication="name">
+                    <i class="bi bi-person-circle"></i> <span sec:authentication="name">Пользователь</span>
+                </span>
+                <a href="/auth/logout" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-box-arrow-right"></i> Выйти
+                </a>
+            </div>
         </div>
     </div>
 </nav>
@@ -88,6 +97,66 @@
         </div>
     </div>
 
+    <!-- ====== КАРТОЧКА: ИМПОРТ + ЭКСПОРТ EXCEL ====== -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <!-- Левая часть: импорт -->
+                <div class="col-md-6">
+                    <form action="/products/import" method="post" enctype="multipart/form-data" class="row g-2 align-items-end">
+                        <div class="col-12">
+                            <label class="form-label">📤 Загрузить товары из Excel</label>
+                            <input type="file" class="form-control" name="file" accept=".xlsx,.xls" required>
+                        </div>
+                        <div class="col-6">
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-upload"></i> Загрузить
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <a href="#" class="btn btn-outline-secondary w-100">
+                                <i class="bi bi-download"></i> Скачать шаблон
+                            </a>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Правая часть: экспорт -->
+                <div class="col-md-6">
+                    <div class="border-start ps-3" style="border-color: #dee2e6 !important;">
+                        <label class="form-label">📥 Выгрузить данные</label>
+                        <div class="d-grid gap-2">
+                            <a th:href="@{/products/export/excel}" class="btn btn-success">
+                                <i class="bi bi-file-earmark-excel"></i> Выгрузить Excel
+                            </a>
+                        </div>
+                        <small class="text-muted">Выгружает все товары в формате .xlsx</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Блок результатов импорта -->
+    <div th:if="${importResult}" class="alert alert-info mt-3">
+        <h5>📊 Результат импорта:</h5>
+        <p>Всего строк: <strong th:text="${importResult.totalRows}">0</strong></p>
+        <p>Успешно: <strong th:text="${importResult.successCount}">0</strong></p>
+        <p>Ошибок: <strong th:text="${importResult.errorCount}">0</strong></p>
+        <div th:if="${importResult.hasErrors()}">
+            <h6>❌ Ошибки:</h6>
+            <ul>
+                <li th:each="err : ${importResult.errors}" th:text="${err}"></li>
+            </ul>
+        </div>
+        <div th:if="${not importResult.errors.isEmpty()}">
+            <h6>✅ Успешно добавлено:</h6>
+            <ul>
+                <li th:each="msg : ${importResult.messages}" th:text="${msg}"></li>
+            </ul>
+        </div>
+    </div>
+
     <!-- Таблица товаров -->
     <div class="table-responsive">
         <table class="table table-striped table-hover">
@@ -105,27 +174,27 @@
             </tr>
             </thead>
             <tbody>
-            <tr th:each="p : ${products}">
-                <td th:text="${p.id}">1</td>
-                <td th:text="${p.name}">Название</td>
-                <td th:text="${p.sku != null ? p.sku : '-'}">SKU</td>
-                <td th:text="${p.supplier != null ? p.supplier.name : '-'}">Поставщик</td>
-                <td th:text="'₽' + ${#numbers.formatDecimal(p.price, 0, 'COMMA', 2, 'POINT')}">0</td>
-                <td th:text="${p.currentStock != null ? p.currentStock : 0}">0</td>
-                <td th:text="${salesMap != null ? salesMap[p.id] : 0}">0</td>
+            <tr th:each="item : ${products}">
+                <td th:text="${item.id}">1</td>
+                <td th:text="${item.name}">Название</td>
+                <td th:text="${item.sku != null ? item.sku : '-'}">SKU</td>
+                <td th:text="${item.supplier != null ? item.supplier.name : '-'}">Поставщик</td>
+                <td th:text="'₽' + ${#numbers.formatDecimal(item.price, 0, 'COMMA', 2, 'POINT')}">0</td>
+                <td th:text="${item.currentStock != null ? item.currentStock : 0}">0</td>
+                <td th:text="${salesMap != null ? salesMap[item.id] : 0}">0</td>
                 <td>
                     <span class="badge"
-                          th:class="${p.currentStock != null && p.currentStock < 10 ? 'bg-danger' :
-                                    p.currentStock != null && p.currentStock < 30 ? 'bg-warning text-dark' : 'bg-success'}">
-                        <span th:text="${p.currentStock != null && p.currentStock < 10 ? 'Критично!' :
-                                        p.currentStock != null && p.currentStock < 30 ? 'Мало' : 'Норма'}">Норма</span>
+                          th:class="${item.currentStock != null && item.currentStock < 10 ? 'bg-danger' :
+                                    item.currentStock != null && item.currentStock < 30 ? 'bg-warning text-dark' : 'bg-success'}">
+                        <span th:text="${item.currentStock != null && item.currentStock < 10 ? 'Критично!' :
+                                        item.currentStock != null && item.currentStock < 30 ? 'Мало' : 'Норма'}">Норма</span>
                     </span>
                 </td>
                 <td>
-                    <a th:href="@{/products/edit/{id}(id=${p.id})}" class="btn btn-sm btn-warning">
+                    <a th:href="@{/products/edit/{id}(id=${item.id})}" class="btn btn-sm btn-warning">
                         <i class="bi bi-pencil"></i>
                     </a>
-                    <a th:href="@{/products/delete/{id}(id=${p.id})}"
+                    <a th:href="@{/products/delete/{id}(id=${item.id})}"
                        class="btn btn-sm btn-danger"
                        onclick="return confirm('Удалить товар?')">
                         <i class="bi bi-trash"></i>
