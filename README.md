@@ -42,6 +42,9 @@ cd procurement
 mysql -u root -p
 CREATE DATABASE procurement_db;
 
+# Запустить все тесты
+SPRING_PROFILES_ACTIVE=mysql ./gradlew clean test
+
 # Запустить приложение
 SPRING_PROFILES_ACTIVE=mysql ./gradlew bootRun
 
@@ -56,3 +59,5 @@ https://procurement.onrender.com
 📸 Скриншоты
 https://screenshots/dashboard.png
 https://screenshots/suppliers.png
+
+```bash
