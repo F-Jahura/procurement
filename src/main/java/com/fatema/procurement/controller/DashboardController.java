@@ -25,6 +25,16 @@ public class DashboardController {
         return home(model);
     }
 
+    @GetMapping("/purchases")
+    public String purchases() {
+        return "purchases";
+    }
+
+    @GetMapping("/sales")
+    public String sales() {
+        return "sales";
+    }
+
     // Страница входа (не перенаправляем, а показываем форму)
     @GetMapping("/login")
     public String login() {

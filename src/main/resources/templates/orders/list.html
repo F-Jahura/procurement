@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <title>Заказы | Procurement Monitor</title>
@@ -10,14 +11,34 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
         <a class="navbar-brand" href="/">📦 Procurement Monitor</a>
-        <div class="collapse navbar-collapse">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
                 <li class="nav-item"><a class="nav-link" href="/">Главная</a></li>
-                <li class="nav-item"><a class="nav-link" href="/suppliers">Поставщики</a></li>
-                <li class="nav-item"><a class="nav-link" href="/products">Товары</a></li>
-                <li class="nav-item"><a class="nav-link active" href="/orders">Заказы</a></li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="purchaseDropdown" role="button" data-bs-toggle="dropdown">
+                        📥 Закупки
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/suppliers">Поставщики</a></li>
+                        <li><a class="dropdown-item" href="/products">Товары</a></li>
+                        <li><a class="dropdown-item" href="/stock-purchase">Остаток/Закупка</a></li>
+                        <li><a class="dropdown-item" href="/purchase-orders">Заказы поставщиков</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="salesDropdown" role="button" data-bs-toggle="dropdown">
+                        📤 Продажи
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/sales/products">Товары</a></li>
+                        <li><a class="dropdown-item" href="/sales/orders">Активные заказы</a></li>
+                        <li><a class="dropdown-item" href="/sales/reports">Отчёты</a></li>
+                    </ul>
+                </li>
             </ul>
-            <!-- ====== КНОПКА ВЫХОДА (ДОБАВЛЕНА) ====== -->
             <div class="navbar-nav ms-auto">
                 <span class="navbar-text me-3 text-white-50" sec:authentication="name">
                     <i class="bi bi-person-circle"></i> <span sec:authentication="name">Пользователь</span>
@@ -55,17 +76,18 @@
                 <td th:text="${o.id}">1</td>
                 <td th:text="${o.orderNumber}">PO-001</td>
                 <td th:text="${o.supplier != null ? o.supplier.name : '-'}">Поставщик</td>
-                <td th:text="${o.orderDate}">2024-06-01</td>
-                <td th:text="${o.deliveryDate != null ? o.deliveryDate : '-'}">2024-07-01</td>
+                <td th:text="${#temporals.format(o.orderDate, 'dd.MM.yyyy')}">01.06.2024</td>
+                <td th:text="${o.deliveryDate != null ? #temporals.format(o.deliveryDate, 'dd.MM.yyyy') : '-'}">01.07.2024</td>
                 <td th:text="'₽' + ${#numbers.formatDecimal(o.totalAmount, 0, 'COMMA', 2, 'POINT')}">0</td>
                 <td>
-                            <span class="badge"
-                                  th:class="${o.status == 'DRAFT' ? 'bg-secondary' :
-                                           o.status == 'SENT' ? 'bg-info' :
-                                           o.status == 'CONFIRMED' ? 'bg-primary' :
-                                           o.status == 'SHIPPED' ? 'bg-warning text-dark' :
-                                           o.status == 'DELIVERED' ? 'bg-success' : 'bg-danger'}"
-                                  th:text="${o.status}">DRAFT</span>
+                    <span class="badge"
+                          th:class="${o.status.name() == 'DELIVERED' ? 'bg-success' :
+                                    o.status.name() == 'SHIPPED' ? 'bg-info' :
+                                    o.status.name() == 'SENT' ? 'bg-warning text-dark' :
+                                    o.status.name() == 'CONFIRMED' ? 'bg-primary' :
+                                    o.status.name() == 'DRAFT' ? 'bg-secondary' : 'bg-danger'}">
+                        <span th:text="${o.status.displayName}">DRAFT</span>
+                    </span>
                 </td>
                 <td>
                     <a th:href="@{/orders/edit/{id}(id=${o.id})}" class="btn btn-sm btn-warning">
@@ -79,7 +101,9 @@
                 </td>
             </tr>
             <tr th:if="${orders.isEmpty()}">
-                <td colspan="8" class="text-center text-muted">Нет заказов. Создайте первый!</td>
+                <td colspan="8" class="text-center text-muted py-4">
+                    <i class="bi bi-info-circle"></i> Нет заказов. Создайте первый!
+                </td>
             </tr>
             </tbody>
         </table>

@@ -17,10 +17,11 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/products")
-public class ProductControllerUI {
+public class  ProductControllerUI {
 
     @Autowired
     private ProductService productService;
@@ -43,48 +44,53 @@ public class ProductControllerUI {
         List<Product> products = productRepository.findAll();
         excelExportService.exportProducts(products, response);
     }
-
     @GetMapping
     public String listProducts(
             @RequestParam(required = false) String name,
+            @RequestParam(required = false) String sku,  // ← НОВЫЙ ПАРАМЕТР
             @RequestParam(required = false) Long supplierId,
             @RequestParam(required = false) Integer minStock,
             @RequestParam(required = false) Boolean lowStockOnly,
             @RequestParam(required = false) Integer salesPeriodMonths,
             Model model) {
 
-        // Обработка параметров
         if (name != null && name.trim().isEmpty()) name = null;
+        if (sku != null && sku.trim().isEmpty()) sku = null;  // ← ДОБАВЛЕНО
         if (minStock != null && minStock <= 0) minStock = null;
 
         int period = salesPeriodMonths != null ? salesPeriodMonths : 3;
         if (period < 1) period = 1;
         if (period > 6) period = 6;
 
-        ProductFilterDTO filter = new ProductFilterDTO(name, supplierId, minStock, lowStockOnly, period);
+        ProductFilterDTO filter = new ProductFilterDTO(name, supplierId, minStock, lowStockOnly);
+        filter.setSku(sku);  // ← ДОБАВЛЕНО
+        filter.setSalesPeriodMonths(period);
 
-        // Получаем товары
         List<Product> products = productService.getFilteredProducts(filter);
 
-        // Считаем продажи для каждого товара
-        Map<Long, Integer> salesMap = new HashMap<>();
+        if (lowStockOnly != null && lowStockOnly) {
+            products = products.stream()
+                    .filter(p -> "Критично!".equals(productService.getStockStatusText(p)))
+                    .collect(Collectors.toList());
+        }
+
+        Map<Long, String> statusTextMap = new HashMap<>();
+        Map<Long, String> statusColorMap = new HashMap<>();
         for (Product p : products) {
-            try {
-                int sales = salesCalculationService.getSalesCountForProduct(p.getId(), period);
-                salesMap.put(p.getId(), sales);
-            } catch (Exception e) {
-                salesMap.put(p.getId(), 0);
-            }
+            statusTextMap.put(p.getId(), productService.getStockStatusText(p));
+            statusColorMap.put(p.getId(), productService.getStockStatusColor(p));
         }
 
         model.addAttribute("products", products);
         model.addAttribute("filter", filter);
         model.addAttribute("suppliers", supplierService.getAllSuppliers());
-        model.addAttribute("salesMap", salesMap);
+        model.addAttribute("statusTextMap", statusTextMap);
+        model.addAttribute("statusColorMap", statusColorMap);
         model.addAttribute("salesPeriod", period);
 
         return "products/list";
     }
+
     @GetMapping("/new")
     public String showCreateForm(Model model) {
         model.addAttribute("product", new Product());

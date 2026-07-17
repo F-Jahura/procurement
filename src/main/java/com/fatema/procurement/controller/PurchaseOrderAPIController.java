@@ -13,7 +13,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/purchase-orders")
-public class PurchaseOrderController {
+public class PurchaseOrderAPIController {
 
     @Autowired
     private PurchaseOrderService purchaseOrderService;
@@ -108,4 +108,3 @@ public class PurchaseOrderController {
         }
     }
 }
-

@@ -49,7 +49,11 @@ public class SupplierControllerUI {
             Model model) {
 
         // Создаём объект фильтра
-        SupplierFilterDTO filter = new SupplierFilterDTO(name, country, active);
+        //SupplierFilterDTO filter = new SupplierFilterDTO(name, country, active);
+        SupplierFilterDTO filter = new SupplierFilterDTO();
+        filter.setName(name);
+        filter.setCountry(country);
+        filter.setActive(active);
 
         // Получаем отфильтрованный список
         List<Supplier> suppliers = supplierService.getFilteredSuppliers(filter);

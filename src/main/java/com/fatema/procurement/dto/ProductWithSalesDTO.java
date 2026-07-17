@@ -47,7 +47,7 @@ public class ProductWithSalesDTO {
     public String getSupplierName() {
         return product.getSupplier() != null ? product.getSupplier().getName() : "-";
     }
-    public BigDecimal getPrice() { return product.getPrice(); }
+    public BigDecimal getCostPrice() { return product.getCostPrice(); }
     public Integer getCurrentStock() { return product.getCurrentStock(); }
     public Integer getMinStock() { return product.getMinStock(); }
     public String getUnit() { return product.getUnit(); }

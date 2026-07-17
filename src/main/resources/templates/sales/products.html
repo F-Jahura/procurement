@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Товары для продажи | Procurement Monitor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand" href="/">📦 Procurement Monitor</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item"><a class="nav-link" href="/">Главная</a></li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="purchaseDropdown" role="button" data-bs-toggle="dropdown">
+                        📥 Закупки
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/suppliers">Поставщики</a></li>
+                        <li><a class="dropdown-item" href="/products">Товары</a></li>
+                        <li><a class="dropdown-item" href="/stock-purchase">Остаток/Закупка</a></li>
+                        <li><a class="dropdown-item" href="/purchase-orders">Заказы поставщиков</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle active" href="#" id="salesDropdown" role="button" data-bs-toggle="dropdown">
+                        📤 Продажи
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item active" href="/sales/products">Товары</a></li>
+                        <li><a class="dropdown-item" href="/sales/orders">Активные заказы</a></li>
+                        <li><a class="dropdown-item" href="/sales/reports">Отчёты</a></li>
+                    </ul>
+                </li>
+            </ul>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3 text-white-50" sec:authentication="name">
+                    <i class="bi bi-person-circle"></i> <span sec:authentication="name">Пользователь</span>
+                </span>
+                <a href="/auth/logout" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-box-arrow-right"></i> Выйти
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <h2>📦 Товары для продажи</h2>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead class="table-dark">
+            <tr>
+                <th>Название</th>
+                <th>Артикул</th>
+                <th>Продажная цена</th>
+                <th>Остаток</th>
+                <th>Статус</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${products}">
+                <td th:text="${item.name}">Название</td>
+                <td th:text="${item.sku}">SKU</td>
+                <td th:text="'₽' + ${#numbers.formatDecimal(item.sellingPrice, 0, 'COMMA', 2, 'POINT')}">0</td>
+                <td th:text="${item.currentStock}">0</td>
+                <td>
+                    <span class="badge" th:class="${item.currentStock > 0 ? 'bg-success' : 'bg-danger'}">
+                        <span th:text="${item.currentStock > 0 ? 'В наличии' : 'Нет в наличии'}">В наличии</span>
+                    </span>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

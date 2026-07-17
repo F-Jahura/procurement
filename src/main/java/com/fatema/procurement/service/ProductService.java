@@ -40,26 +40,19 @@ public class ProductService {
                 })
                 .collect(Collectors.toList());
     }
-
     public List<Product> getFilteredProducts(ProductFilterDTO filter) {
-        // Если фильтр пустой — возвращаем все
         if (filter == null || filter.isEmpty()) {
             return productRepository.findAllByOrderByCurrentStockAsc();
         }
 
         String name = filter.getName() != null ? filter.getName().trim() : null;
+        String sku = filter.getSku() != null ? filter.getSku().trim() : null;  // ← ДОБАВЛЕНО
         Long supplierId = filter.getSupplierId();
         Integer minStock = filter.getMinStock();
 
-        // Если включен фильтр "только низкий остаток"
-        if (filter.getLowStockOnly() != null && filter.getLowStockOnly()) {
-            return productRepository.findLowStockOnly();
-        }
-
-        // Начинаем с полного списка
         List<Product> result = productRepository.findAll();
 
-        // Фильтр по названию (если есть)
+        // Фильтр по названию
         if (name != null && !name.isEmpty()) {
             String nameLower = name.toLowerCase();
             result = result.stream()
@@ -67,21 +60,28 @@ public class ProductService {
                     .collect(Collectors.toList());
         }
 
-        // Фильтр по поставщику (если есть)
+        // ====== ФИЛЬТР ПО SKU (НОВЫЙ) ======
+        if (sku != null && !sku.isEmpty()) {
+            String skuLower = sku.toLowerCase();
+            result = result.stream()
+                    .filter(p -> p.getSku() != null && p.getSku().toLowerCase().contains(skuLower))
+                    .collect(Collectors.toList());
+        }
+
+        // Фильтр по поставщику
         if (supplierId != null) {
             result = result.stream()
                     .filter(p -> p.getSupplier() != null && p.getSupplier().getId().equals(supplierId))
                     .collect(Collectors.toList());
         }
 
-        // Фильтр по минимальному остатку (если есть)
+        // Фильтр по минимальному остатку
         if (minStock != null && minStock > 0) {
             result = result.stream()
                     .filter(p -> p.getCurrentStock() != null && p.getCurrentStock() < minStock)
                     .collect(Collectors.toList());
         }
 
-        // Сортировка по остатку (сначала самые маленькие)
         result.sort(Comparator.comparingInt(p -> p.getCurrentStock() != null ? p.getCurrentStock() : Integer.MAX_VALUE));
 
         return result;
@@ -90,24 +90,6 @@ public class ProductService {
     // Получить все товары с низким остатком (10-29)
     public List<Product> getLowStockProducts() {
         return productRepository.findLowStock();
-    }
-
-    // Получить цвет статуса для товара
-    public String getStockStatusColor(Product product) {
-        Integer stock = product.getCurrentStock();
-        if (stock == null) return "bg-secondary";
-        if (stock < 10) return "bg-danger";
-        if (stock < 30) return "bg-warning text-dark";
-        return "bg-success";
-    }
-
-    // Получить текст статуса для товара
-    public String getStockStatusText(Product product) {
-        Integer stock = product.getCurrentStock();
-        if (stock == null) return "Неизвестно";
-        if (stock < 10) return "Критично!";
-        if (stock < 30) return "Мало";
-        return "Норма";
     }
 
     // ... остальные методы (create, update, delete, etc.)
@@ -140,7 +122,7 @@ public class ProductService {
     }
 
     public List<Product> getProductsCheaperThan(BigDecimal price) {
-        return productRepository.findByPriceLessThan(price);
+        return productRepository.findByCostPriceLessThan(price);
     }
 
     public List<Product> getProductsWithLowStock() {
@@ -161,7 +143,8 @@ public class ProductService {
         product.setName(productDetails.getName());
         product.setSku(productDetails.getSku());
         product.setDescription(productDetails.getDescription());
-        product.setPrice(productDetails.getPrice());
+        product.setCostPrice(productDetails.getCostPrice());
+        product.calculateSellingPrice();
         product.setMinStock(productDetails.getMinStock());
         product.setCurrentStock(productDetails.getCurrentStock());
         product.setUnit(productDetails.getUnit());
@@ -184,5 +167,52 @@ public class ProductService {
     public void deleteProduct(Long id) {
         productRepository.deleteById(id);
     }
+
+    public String getStockStatusText(Product product) {
+        Integer stock = product.getCurrentStock();
+        Integer minStock = product.getMinStock();
+
+        if (stock == null) {
+            return "Неизвестно";
+        }
+
+        if (minStock == null || minStock <= 0) {
+            if (stock < 10) return "Критично!";
+            if (stock < 30) return "Мало";
+            return "Норма";
+        }
+
+        if (stock < minStock) {
+            return "Критично!";
+        } else if (stock < minStock + 10) {
+            return "Мало";
+        } else {
+            return "Норма";
+        }
+    }
+
+    public String getStockStatusColor(Product product) {
+        Integer stock = product.getCurrentStock();
+        Integer minStock = product.getMinStock();
+
+        if (stock == null) {
+            return "bg-secondary";
+        }
+
+        if (minStock == null || minStock <= 0) {
+            if (stock < 10) return "bg-danger";
+            if (stock < 30) return "bg-warning text-dark";
+            return "bg-success";
+        }
+
+        if (stock < minStock) {
+            return "bg-danger";
+        } else if (stock < minStock + 10) {
+            return "bg-warning text-dark";
+        } else {
+            return "bg-success";
+        }
+    }
+
 }
 

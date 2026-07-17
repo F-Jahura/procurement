@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - changeSet:
+      id: 10
+      author: fatema
+      changes:
+        - addColumn:
+            tableName: order_items
+            columns:
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP

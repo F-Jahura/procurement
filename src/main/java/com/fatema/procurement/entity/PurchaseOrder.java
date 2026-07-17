@@ -42,5 +42,16 @@ public class PurchaseOrder extends BaseEntity{
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<OrderItem> items = new ArrayList<>();
 
+    // Метод для расчёта общей суммы
+    public void calculateTotalAmount() {
+        if (items != null && !items.isEmpty()) {
+            this.totalAmount = items.stream()
+                    .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+        } else {
+            this.totalAmount = BigDecimal.ZERO;
+        }
+    }
+
 }
 

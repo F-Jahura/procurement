@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 9
+      author: fatema
+      changes:
+        - sql:
+            comment: Добавляем колонку cost_price
+            sql: |
+              ALTER TABLE products ADD COLUMN cost_price DECIMAL(10,2) NULL;
+        - sql:
+            comment: Добавляем колонку selling_price
+            sql: |
+              ALTER TABLE products ADD COLUMN selling_price DECIMAL(10,2) NULL;
+        - sql:
+            comment: Добавляем колонку sales_last_3_months
+            sql: |
+              ALTER TABLE products ADD COLUMN sales_last_3_months INT DEFAULT 0;

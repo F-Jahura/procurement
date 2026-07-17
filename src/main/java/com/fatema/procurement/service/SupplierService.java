@@ -6,6 +6,7 @@ import com.fatema.procurement.repository.SupplierRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.stream.Collectors;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,47 +18,54 @@ public class SupplierService {
     @Autowired
     private SupplierRepository supplierRepository;
 
-    // Поиск с фильтрацией
     public List<Supplier> getFilteredSuppliers(SupplierFilterDTO filter) {
-        String name = filter.getName() != null ? filter.getName().trim() : null;
-        String country = filter.getCountry() != null ? filter.getCountry().trim() : null;
-        Boolean active = filter.getActive();
+        // Получаем все записи
+        List<Supplier> result = supplierRepository.findAll();
 
-        // Если все поля пустые → возвращаем все с сортировкой
-        if ((name == null || name.isEmpty()) && (country == null || country.isEmpty()) && active == null) {
-            return supplierRepository.findAllByOrderByCreatedAtDesc();
+        System.out.println("=== ФИЛЬТРАЦИЯ ===");
+        System.out.println("Всего записей: " + result.size());
+        System.out.println("filter.getActive(): " + filter.getActive());
+
+        // Фильтр по имени
+        if (filter.getName() != null && !filter.getName().isEmpty()) {
+            String nameLower = filter.getName().toLowerCase().trim();
+            result = result.stream()
+                    .filter(s -> s.getName() != null &&
+                            s.getName().toLowerCase().contains(nameLower))
+                    .collect(Collectors.toList());
+            System.out.println("После фильтра по имени: " + result.size());
         }
 
-        // Если есть и название, и страна, и статус
-        if (name != null && !name.isEmpty() && country != null && !country.isEmpty() && active != null) {
-            return supplierRepository.findByNameContainingIgnoreCaseAndCountryIgnoreCaseAndActive(
-                    name, country, active
-            );
+        // Фильтр по стране
+        if (filter.getCountry() != null && !filter.getCountry().isEmpty()) {
+            String countryLower = filter.getCountry().toLowerCase().trim();
+            result = result.stream()
+                    .filter(s -> s.getCountry() != null &&
+                            s.getCountry().toLowerCase().equals(countryLower))
+                    .collect(Collectors.toList());
+            System.out.println("После фильтра по стране: " + result.size());
         }
 
-        // Если есть название и страна (без статуса)
-        if (name != null && !name.isEmpty() && country != null && !country.isEmpty()) {
-            return supplierRepository.findByNameContainingIgnoreCaseAndCountryIgnoreCaseOrderByCreatedAtDesc(
-                    name, country
-            );
+        // Фильтр по статусу (ИСПРАВЛЕНО!)
+        if (filter.getActive() != null) {
+            System.out.println("Применяем фильтр по статусу: " + filter.getActive());
+            result = result.stream()
+                    .filter(s -> {
+                        // Явно получаем значение active
+                        boolean isActive = s.isActive();  // или s.getActive()
+                        boolean match = isActive == filter.getActive();
+                        System.out.println("  - " + s.getName() + " | active: " + isActive + " | match: " + match);
+                        return match;
+                    })
+                    .collect(Collectors.toList());
+            System.out.println("После фильтра по статусу: " + result.size());
         }
 
-        // Если есть только название
-        if (name != null && !name.isEmpty()) {
-            return supplierRepository.findByNameContainingIgnoreCase(name);
-        }
+        // Сортировка по дате создания (новые сверху)
+        result.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
 
-        // Если есть только страна
-        if (country != null && !country.isEmpty()) {
-            return supplierRepository.findByCountryIgnoreCase(country);
-        }
-
-        // Если есть только статус
-        if (active != null) {
-            return supplierRepository.findByActive(active);
-        }
-
-        return supplierRepository.findAllByOrderByCreatedAtDesc();
+        System.out.println("Итоговый результат: " + result.size());
+        return result;
     }
 
     // Получить все уникальные страны для фильтра
@@ -92,7 +100,8 @@ public class SupplierService {
 
     // Получить поставщика по названию
     public Optional<Supplier> getSupplierByName(String name) {
-        return supplierRepository.findByNameIgnoreCase(name);
+        List<Supplier> suppliers = supplierRepository.findByNameIgnoreCase(name);
+        return suppliers.isEmpty() ? Optional.empty() : Optional.of(suppliers.get(0));
     }
 
     // Получить поставщиков по стране

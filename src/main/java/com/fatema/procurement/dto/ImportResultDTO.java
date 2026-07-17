@@ -9,6 +9,7 @@ public class ImportResultDTO {
     private int errorCount;
     private List<String> errors = new ArrayList<>();
     private List<String> messages = new ArrayList<>();
+    private List<String> infoMessages = new ArrayList<>();
 
     public ImportResultDTO() {}
 
@@ -20,6 +21,10 @@ public class ImportResultDTO {
     public void addError(String error) {
         errorCount++;
         errors.add("❌ " + error);
+    }
+
+    public void addInfo(String info) {
+        infoMessages.add("ℹ️ " + info);
     }
 
     // Геттеры и сеттеры

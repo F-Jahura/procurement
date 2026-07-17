@@ -1,11 +1,9 @@
 package com.fatema.procurement.service;
 
 import com.fatema.procurement.dto.OrderItemDTO;
+import com.fatema.procurement.dto.PurchaseOrderRequestDTO;
 import com.fatema.procurement.entity.*;
-import com.fatema.procurement.repository.OrderItemRepository;
-import com.fatema.procurement.repository.ProductRepository;
-import com.fatema.procurement.repository.PurchaseOrderRepository;
-import com.fatema.procurement.repository.SupplierRepository;
+import com.fatema.procurement.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,8 +22,10 @@ public class PurchaseOrderService {
 
     @Autowired
     private SupplierRepository supplierRepository;
+
     @Autowired
     private ProductRepository productRepository;
+
     @Autowired
     private OrderItemRepository orderItemRepository;
 
@@ -35,21 +35,144 @@ public class PurchaseOrderService {
         return "PO-" + year + "-" + String.format("%04d", count);
     }
 
-    // Создать заказ
-    public PurchaseOrder createPurchaseOrder(PurchaseOrder order) {
-        // Проверяем поставщика
+    // Создать заказ из страницы "Остаток/Закупка"
+
+    @Transactional
+    public PurchaseOrder createOrderFromStock(PurchaseOrderRequestDTO request) {
+        // 1. Проверяем поставщика
+        Supplier supplier = supplierRepository.findById(request.getSupplierId())
+                .orElseThrow(() -> new RuntimeException("Поставщик не найден"));
+
+        // 2. Создаём новый заказ
+        PurchaseOrder order = new PurchaseOrder();
+        order.setOrderNumber(generateOrderNumber());
+        order.setSupplier(supplier);
+        order.setOrderDate(LocalDate.now());
+        order.setStatus(OrderStatus.DRAFT);
+        order.setTotalAmount(BigDecimal.ZERO);  // ← ВАЖНО! Инициализируем сумму
+
+        // 3. Сохраняем заказ
+        PurchaseOrder savedOrder = purchaseOrderRepository.save(order);
+
+        // 4. Добавляем товары и считаем сумму
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        for (PurchaseOrderRequestDTO.OrderItemRequestDTO itemDTO : request.getItems()) {
+            Product product = productRepository.findById(itemDTO.getProductId())
+                    .orElseThrow(() -> new RuntimeException("Товар не найден: " + itemDTO.getProductId()));
+
+            OrderItem orderItem = new OrderItem();
+            orderItem.setOrder(savedOrder);
+            orderItem.setProduct(product);
+            orderItem.setQuantity(itemDTO.getQuantity());
+            orderItem.setPrice(product.getCostPrice());
+
+            orderItemRepository.save(orderItem);
+
+            // Считаем сумму
+            BigDecimal itemTotal = product.getCostPrice().multiply(BigDecimal.valueOf(itemDTO.getQuantity()));
+            totalAmount = totalAmount.add(itemTotal);
+        }
+
+        // 5. Обновляем сумму заказа
+        savedOrder.setTotalAmount(totalAmount);
+        return purchaseOrderRepository.save(savedOrder);
+    }
+    /*@Transactional
+    public PurchaseOrder createOrderFromStock(PurchaseOrderRequestDTO request) {
+        // 1. Проверяем поставщика
+        Supplier supplier = supplierRepository.findById(request.getSupplierId())
+                .orElseThrow(() -> new RuntimeException("Поставщик не найден"));
+
+        // 2. Создаём новый заказ
+        PurchaseOrder order = new PurchaseOrder();
+        order.setOrderNumber(generateOrderNumber());
+        order.setSupplier(supplier);
+        order.setOrderDate(LocalDate.now());
+        order.setStatus(OrderStatus.DRAFT);
+
+        // 3. Сохраняем заказ
+        PurchaseOrder savedOrder = purchaseOrderRepository.save(order);
+
+        // 4. Добавляем товары в заказ
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        for (PurchaseOrderRequestDTO.OrderItemRequestDTO itemDTO : request.getItems()) {
+            Product product = productRepository.findById(itemDTO.getProductId())
+                    .orElseThrow(() -> new RuntimeException("Товар не найден"));
+
+            // Создаём элемент заказа
+            OrderItem orderItem = new OrderItem();
+            orderItem.setOrder(savedOrder);
+            orderItem.setProduct(product);
+            orderItem.setQuantity(itemDTO.getQuantity());
+            orderItem.setPrice(product.getCostPrice());  // Себестоимость
+
+            orderItemRepository.save(orderItem);
+
+            // Считаем общую сумму
+            totalAmount = totalAmount.add(
+                    product.getCostPrice().multiply(BigDecimal.valueOf(itemDTO.getQuantity()))
+            );
+        }
+
+        // 5. Обновляем сумму заказа
+        savedOrder.setTotalAmount(totalAmount);
+        return purchaseOrderRepository.save(savedOrder);
+    }*/
+
+    // Создать заказ с товарами (старый метод)
+    @Transactional
+    public PurchaseOrder createPurchaseOrderWithItems(PurchaseOrder order, List<OrderItemDTO> items) {
+        order.setOrderNumber(generateOrderNumber());
+
+        if (order.getOrderDate() == null) {
+            order.setOrderDate(LocalDate.now());
+        }
+
+        if (order.getStatus() == null) {
+            order.setStatus(OrderStatus.DRAFT);
+        }
+
         if (order.getSupplier() != null && order.getSupplier().getId() != null) {
             Supplier supplier = supplierRepository.findById(order.getSupplier().getId())
                     .orElseThrow(() -> new RuntimeException("Supplier not found"));
             order.setSupplier(supplier);
         }
 
-        // Если дата заказа не указана — ставим сегодня
+        PurchaseOrder savedOrder = purchaseOrderRepository.save(order);
+
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        for (OrderItemDTO itemDTO : items) {
+            Product product = productRepository.findById(itemDTO.getProductId())
+                    .orElseThrow(() -> new RuntimeException("Product not found"));
+
+            OrderItem orderItem = new OrderItem();
+            orderItem.setOrder(savedOrder);
+            orderItem.setProduct(product);
+            orderItem.setQuantity(itemDTO.getQuantity());
+            orderItem.setPrice(product.getCostPrice());  // ← ИСПРАВЛЕНО
+
+            orderItemRepository.save(orderItem);
+
+            // ← ИСПРАВЛЕНО: используем costPrice
+            totalAmount = totalAmount.add(product.getCostPrice().multiply(BigDecimal.valueOf(itemDTO.getQuantity())));
+        }
+
+        savedOrder.setTotalAmount(totalAmount);
+        return purchaseOrderRepository.save(savedOrder);
+    }
+
+    // Создать простой заказ (без товаров)
+    public PurchaseOrder createPurchaseOrder(PurchaseOrder order) {
+        if (order.getSupplier() != null && order.getSupplier().getId() != null) {
+            Supplier supplier = supplierRepository.findById(order.getSupplier().getId())
+                    .orElseThrow(() -> new RuntimeException("Supplier not found"));
+            order.setSupplier(supplier);
+        }
+
         if (order.getOrderDate() == null) {
             order.setOrderDate(LocalDate.now());
         }
 
-        // Если статус не указан — ставим DRAFT
         if (order.getStatus() == null) {
             order.setStatus(OrderStatus.DRAFT);
         }
@@ -57,64 +180,29 @@ public class PurchaseOrderService {
         return purchaseOrderRepository.save(order);
     }
 
+    // Обновить статус заказа (с пополнением склада при получении)
     @Transactional
-    public PurchaseOrder createPurchaseOrderWithItems(PurchaseOrder order, List<OrderItemDTO> items) {
-        // 1. Генерируем номер заказа
-        order.setOrderNumber(generateOrderNumber());
+    public PurchaseOrder updateOrderStatus(Long id, OrderStatus newStatus) {
+        PurchaseOrder order = purchaseOrderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order not found with id: " + id));
 
-        // 2. Устанавливаем дату заказа
-        if (order.getOrderDate() == null) {
-            order.setOrderDate(LocalDate.now());
+        if (newStatus == OrderStatus.DELIVERED && order.getStatus() != OrderStatus.DELIVERED) {
+            addProductsToStock(order);
         }
 
-        // 3. Если статус не указан — DRAFT
-        if (order.getStatus() == null) {
-            order.setStatus(OrderStatus.DRAFT);
-        }
-
-        // 4. Проверяем поставщика
-        if (order.getSupplier() != null && order.getSupplier().getId() != null) {
-            Supplier supplier = supplierRepository.findById(order.getSupplier().getId())
-                    .orElseThrow(() -> new RuntimeException("Supplier not found"));
-            order.setSupplier(supplier);
-        }
-
-        // 5. Сохраняем заказ
-        PurchaseOrder savedOrder = purchaseOrderRepository.save(order);
-
-        // 6. Добавляем товары в заказ и обновляем остатки
-        BigDecimal totalAmount = BigDecimal.ZERO;
-        for (OrderItemDTO itemDTO : items) {
-            Product product = productRepository.findById(itemDTO.getProductId())
-                    .orElseThrow(() -> new RuntimeException("Product not found"));
-
-            // Проверяем остаток
-            if (product.getCurrentStock() < itemDTO.getQuantity()) {
-                throw new RuntimeException("Not enough stock for product: " + product.getName());
-            }
-
-            // Создаём OrderItem
-            OrderItem orderItem = new OrderItem();
-            orderItem.setOrder(savedOrder);
-            orderItem.setProduct(product);
-            orderItem.setQuantity(itemDTO.getQuantity());
-            orderItem.setPrice(product.getPrice());
-
-            orderItemRepository.save(orderItem);
-
-            // Обновляем остаток товара
-            product.setCurrentStock(product.getCurrentStock() - itemDTO.getQuantity());
-            productRepository.save(product);
-
-            // Считаем общую сумму
-            totalAmount = totalAmount.add(product.getPrice().multiply(BigDecimal.valueOf(itemDTO.getQuantity())));
-        }
-
-        // 7. Обновляем сумму заказа
-        savedOrder.setTotalAmount(totalAmount);
-        return purchaseOrderRepository.save(savedOrder);
+        order.setStatus(newStatus);
+        return purchaseOrderRepository.save(order);
     }
 
+    // Добавить товары на склад
+    private void addProductsToStock(PurchaseOrder order) {
+        for (OrderItem item : order.getItems()) {
+            Product product = item.getProduct();
+            int newStock = product.getCurrentStock() + item.getQuantity();
+            product.setCurrentStock(newStock);
+            productRepository.save(product);
+        }
+    }
 
     // Получить все заказы
     public List<PurchaseOrder> getAllOrders() {
@@ -174,18 +262,8 @@ public class PurchaseOrderService {
         return purchaseOrderRepository.save(order);
     }
 
-
-    // Обновить статус заказа
-    public PurchaseOrder updateOrderStatus(Long id, OrderStatus newStatus) {
-        PurchaseOrder order = purchaseOrderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Order not found with id: " + id));
-        order.setStatus(newStatus);
-        return purchaseOrderRepository.save(order);
-    }
-
     // Удалить заказ
     public void deletePurchaseOrder(Long id) {
         purchaseOrderRepository.deleteById(id);
     }
-
 }

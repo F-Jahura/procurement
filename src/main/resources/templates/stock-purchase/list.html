@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Создать заказ поставщикам | Procurement Monitor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand" href="/">📦 Procurement Monitor</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item"><a class="nav-link" href="/">Главная</a></li>
+                <li class="nav-item"><a class="nav-link active" href="/purchases">📥 Закупки</a></li>
+                <li class="nav-item"><a class="nav-link" href="/sales">📤 Продажи</a></li>
+            </ul>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3 text-white-50" sec:authentication="name">
+                    <i class="bi bi-person-circle"></i> <span sec:authentication="name">Пользователь</span>
+                </span>
+                <a href="/auth/logout" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-box-arrow-right"></i> Выйти
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>📊 Создать заказ поставщикам</h2>
+        <div>
+            <a href="/purchase-orders" class="btn btn-outline-primary me-2">
+                <i class="bi bi-list"></i> Заказы поставщиков
+            </a>
+            <button type="button" class="btn btn-success" onclick="createOrders()">
+                <i class="bi bi-plus-circle"></i> Создать заказ
+            </button>
+        </div>
+    </div>
+
+    <!-- Фильтры -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <!-- Быстрые ссылки -->
+                <div class="col-12 mb-2">
+                    <label class="form-label fw-bold">Быстрые фильтры:</label>
+                    <a href="/stock-purchase" class="btn btn-outline-primary btn-sm me-2">Все товары</a>
+                    <a href="/stock-purchase?lowStockOnly=true" class="btn btn-outline-danger btn-sm">Критический остаток</a>
+                    <a href="/stock-purchase?lowStockOnly=false" class="btn btn-outline-warning btn-sm">Нормальный остаток</a>
+                </div>
+
+                <!-- Форма поиска -->
+                <form method="get" action="/stock-purchase" class="row g-3 w-100" id="filterForm">
+                    <div class="col-md-3">
+                        <label for="name" class="form-label">Поиск по названию</label>
+                        <input type="text" class="form-control" id="name" name="name"
+                               th:value="${name != null ? name : ''}"
+                               placeholder="Введите название...">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="supplierId" class="form-label">Поставщик</label>
+                        <select class="form-select" id="supplierId" name="supplierId">
+                            <option value="">Все поставщики</option>
+                            <option th:each="s : ${suppliers}"
+                                    th:value="${s.id}"
+                                    th:text="${s.name}"
+                                    th:selected="${selectedSupplierId != null && selectedSupplierId == s.id}">
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="salesPeriod" class="form-label">Продажи за (мес.)</label>
+                        <select class="form-select" id="salesPeriod" name="salesPeriod">
+                            <option value="1" th:selected="${salesPeriod == 1}">1 месяц</option>
+                            <option value="2" th:selected="${salesPeriod == 2}">2 месяца</option>
+                            <option value="3" th:selected="${salesPeriod == null || salesPeriod == 3}">3 месяца</option>
+                            <option value="4" th:selected="${salesPeriod == 4}">4 месяца</option>
+                            <option value="5" th:selected="${salesPeriod == 5}">5 месяцев</option>
+                            <option value="6" th:selected="${salesPeriod == 6}">6 месяцев</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100 me-2">
+                            <i class="bi bi-search"></i> Найти
+                        </button>
+                        <a href="/stock-purchase" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </a>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <div class="form-check mb-2">
+                            <input type="checkbox" class="form-check-input" id="lowStockOnly" name="lowStockOnly"
+                                   value="true"
+                                   th:checked="${lowStockOnly != null && lowStockOnly}">
+                            <label class="form-check-label" for="lowStockOnly">
+                                <i class="bi bi-exclamation-triangle text-danger"></i>
+                                Только критические
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Таблица -->
+    <div class="table-responsive">
+        <form method="post" action="/stock-purchase/create-order" id="orderForm">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                <tr>
+                    <th><input type="checkbox" id="selectAll" onchange="toggleAll(this)"></th>
+                    <th>Артикул</th>
+                    <th>Название</th>
+                    <th>Поставщик</th>
+                    <th>Себестоимость</th>
+                    <th>Остаток</th>
+                    <th>Продажи за период</th>
+                    <th>Кол-во заказа</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${products}">
+                    <td>
+                        <input type="checkbox" name="selectedProducts" th:value="${item.id}">
+                    </td>
+                    <td th:text="${item.sku != null ? item.sku : '-'}">SKU</td>
+                    <td th:text="${item.name}">Название</td>
+                    <td th:text="${item.supplier != null ? item.supplier.name : '-'}">Поставщик</td>
+                    <td th:text="'₽' + ${#numbers.formatDecimal(item.costPrice, 0, 'COMMA', 2, 'POINT')}">0</td>
+                    <td>
+                        <span th:class="${item.currentStock != null && item.currentStock < 10 ? 'text-danger fw-bold' :
+                                        item.currentStock != null && item.currentStock < 30 ? 'text-warning fw-bold' : ''}"
+                              th:text="${item.currentStock != null ? item.currentStock : 0}">
+                            0
+                        </span>
+                    </td>
+                    <td th:text="${item.salesLast3Months != null ? item.salesLast3Months : 0}">0</td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm"
+                               th:name="'quantity_' + ${item.id}" min="1" value="1" style="width: 80px;">
+                    </td>
+                </tr>
+                <tr th:if="${products.isEmpty()}">
+                    <td colspan="8" class="text-center text-muted py-4">
+                        <i class="bi bi-info-circle"></i> Нет товаров
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </form>
+    </div>
+</div>
+
+<script>
+    function toggleAll(source) {
+        const checkboxes = document.querySelectorAll('input[name="selectedProducts"]');
+        checkboxes.forEach(checkbox => checkbox.checked = source.checked);
+    }
+
+    function createOrders() {
+        const selected = document.querySelectorAll('input[name="selectedProducts"]:checked');
+        if (selected.length === 0) {
+            alert('Пожалуйста, выберите хотя бы один товар');
+            return;
+        }
+
+        const supplierSelect = document.getElementById('supplierId');
+        const selectedSupplierId = supplierSelect.value;
+
+        if (!selectedSupplierId) {
+            alert('Пожалуйста, выберите поставщика');
+            return;
+        }
+
+        const form = document.getElementById('orderForm');
+        form.action = '/stock-purchase/create-order?supplierId=' + selectedSupplierId;
+        form.submit();
+    }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

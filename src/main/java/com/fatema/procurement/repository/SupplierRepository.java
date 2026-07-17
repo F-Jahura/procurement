@@ -9,40 +9,37 @@ import java.util.Optional;
 
 @Repository
 public interface SupplierRepository extends JpaRepository<Supplier, Long> {
-    // Поиск по названию (игнорируя регистр, частичное совпадение)
+
+    // ====== СУЩЕСТВУЮЩИЕ МЕТОДЫ ======
     List<Supplier> findByNameContainingIgnoreCase(String name);
-
-    // Поиск по стране (точное совпадение)
     List<Supplier> findByCountryIgnoreCase(String country);
-
-    // Поиск по статусу активности
-    List<Supplier> findByActive(boolean active);
-
-    // Поиск по названию и стране (комбинированный)
+    List<Supplier> findByActive(Boolean active);
     List<Supplier> findByNameContainingIgnoreCaseAndCountryIgnoreCase(String name, String country);
-
-    // Поиск по названию, стране и статусу
     List<Supplier> findByNameContainingIgnoreCaseAndCountryIgnoreCaseAndActive(String name, String country, boolean active);
-
-    // Поиск всех поставщиков с сортировкой по дате создания (новые сначала)
     List<Supplier> findAllByOrderByCreatedAtDesc();
-
-    // Поиск по стране с сортировкой по названию
     List<Supplier> findByCountryIgnoreCaseOrderByNameAsc(String country);
-
-    // Комбинированный поиск с сортировкой
     List<Supplier> findByNameContainingIgnoreCaseAndCountryIgnoreCaseOrderByCreatedAtDesc(String name, String country);
-
-
-    // Поиск поставщика по названию (игнорируя регистр)
-    Optional<Supplier> findByNameIgnoreCase(String name);
-
-    // Поиск всех активных поставщиков
     List<Supplier> findByActiveTrue();
-
-    // Поиск поставщиков по стране
     List<Supplier> findByCountry(String country);
-
-    // Проверка существования поставщика по email
     boolean existsByEmail(String email);
+
+    // ====== НОВЫЕ МЕТОДЫ ДЛЯ ИМПОРТА ======
+
+    // Поиск по названию (игнорируя регистр) - возвращает список
+    List<Supplier> findByNameIgnoreCase(String name);
+
+    // Поиск по названию (игнорируя регистр) и стране (игнорируя регистр)
+    Optional<Supplier> findByNameIgnoreCaseAndCountryIgnoreCase(String name, String country);
+
+    // Поиск по email (игнорируя регистр)
+    Optional<Supplier> findByEmailIgnoreCase(String email);
+
+    // Поиск по телефону
+    Optional<Supplier> findByPhone(String phone);
+
+    // Проверка существования по email, исключая указанный ID
+    boolean existsByEmailAndIdNot(String email, Long id);
+
+    // Поиск по названию с сортировкой по дате создания (новые сначала)
+    List<Supplier> findByNameIgnoreCaseOrderByCreatedAtDesc(String name);
 }
