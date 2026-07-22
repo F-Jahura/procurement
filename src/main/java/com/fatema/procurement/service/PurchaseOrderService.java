@@ -77,47 +77,6 @@ public class PurchaseOrderService {
         savedOrder.setTotalAmount(totalAmount);
         return purchaseOrderRepository.save(savedOrder);
     }
-    /*@Transactional
-    public PurchaseOrder createOrderFromStock(PurchaseOrderRequestDTO request) {
-        // 1. Проверяем поставщика
-        Supplier supplier = supplierRepository.findById(request.getSupplierId())
-                .orElseThrow(() -> new RuntimeException("Поставщик не найден"));
-
-        // 2. Создаём новый заказ
-        PurchaseOrder order = new PurchaseOrder();
-        order.setOrderNumber(generateOrderNumber());
-        order.setSupplier(supplier);
-        order.setOrderDate(LocalDate.now());
-        order.setStatus(OrderStatus.DRAFT);
-
-        // 3. Сохраняем заказ
-        PurchaseOrder savedOrder = purchaseOrderRepository.save(order);
-
-        // 4. Добавляем товары в заказ
-        BigDecimal totalAmount = BigDecimal.ZERO;
-        for (PurchaseOrderRequestDTO.OrderItemRequestDTO itemDTO : request.getItems()) {
-            Product product = productRepository.findById(itemDTO.getProductId())
-                    .orElseThrow(() -> new RuntimeException("Товар не найден"));
-
-            // Создаём элемент заказа
-            OrderItem orderItem = new OrderItem();
-            orderItem.setOrder(savedOrder);
-            orderItem.setProduct(product);
-            orderItem.setQuantity(itemDTO.getQuantity());
-            orderItem.setPrice(product.getCostPrice());  // Себестоимость
-
-            orderItemRepository.save(orderItem);
-
-            // Считаем общую сумму
-            totalAmount = totalAmount.add(
-                    product.getCostPrice().multiply(BigDecimal.valueOf(itemDTO.getQuantity()))
-            );
-        }
-
-        // 5. Обновляем сумму заказа
-        savedOrder.setTotalAmount(totalAmount);
-        return purchaseOrderRepository.save(savedOrder);
-    }*/
 
     // Создать заказ с товарами (старый метод)
     @Transactional

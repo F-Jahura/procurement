@@ -22,12 +22,12 @@ public class ProductService {
 
     @Autowired
     private ProductRepository productRepository;
+
     @Autowired
     private SalesCalculationService salesCalculationService;
 
     @Autowired
     private SupplierRepository supplierRepository;
-
 
     public List<ProductWithSalesDTO> getProductsWithSales(ProductFilterDTO filter) {
         List<Product> products = getFilteredProducts(filter);
@@ -40,13 +40,14 @@ public class ProductService {
                 })
                 .collect(Collectors.toList());
     }
+
     public List<Product> getFilteredProducts(ProductFilterDTO filter) {
         if (filter == null || filter.isEmpty()) {
             return productRepository.findAllByOrderByCurrentStockAsc();
         }
 
         String name = filter.getName() != null ? filter.getName().trim() : null;
-        String sku = filter.getSku() != null ? filter.getSku().trim() : null;  // ← ДОБАВЛЕНО
+        String sku = filter.getSku() != null ? filter.getSku().trim() : null;
         Long supplierId = filter.getSupplierId();
         Integer minStock = filter.getMinStock();
 
@@ -60,7 +61,7 @@ public class ProductService {
                     .collect(Collectors.toList());
         }
 
-        // ====== ФИЛЬТР ПО SKU (НОВЫЙ) ======
+        // Фильтр по SKU
         if (sku != null && !sku.isEmpty()) {
             String skuLower = sku.toLowerCase();
             result = result.stream()
@@ -87,12 +88,10 @@ public class ProductService {
         return result;
     }
 
-    // Получить все товары с низким остатком (10-29)
     public List<Product> getLowStockProducts() {
         return productRepository.findLowStock();
     }
 
-    // ... остальные методы (create, update, delete, etc.)
     public Product createProduct(Product product) {
         if (product.getSupplier() != null && product.getSupplier().getId() != null) {
             Supplier supplier = supplierRepository.findById(product.getSupplier().getId())
@@ -136,6 +135,7 @@ public class ProductService {
                 .toList();
     }
 
+    // ОСНОВНОЙ МЕТОД ОБНОВЛЕНИЯ (оставляем этот)
     public Product updateProduct(Long id, Product productDetails) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
@@ -157,7 +157,9 @@ public class ProductService {
 
         return productRepository.save(product);
     }
-    public Product updateStock(Long id, int newStock) {
+
+    // Метод для обновления только остатка (оставляем один)
+    public Product updateStock(Long id, Integer newStock) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
         product.setCurrentStock(newStock);
@@ -213,6 +215,4 @@ public class ProductService {
             return "bg-success";
         }
     }
-
 }
-

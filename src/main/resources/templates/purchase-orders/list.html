@@ -47,13 +47,43 @@
                     <h5 class="card-title">📊 Управление заказами поставщиков</h5>
                     <p class="card-text text-muted">Просмотр, отслеживание и обновление статусов заказов</p>
 
-                    <!-- Быстрые ссылки -->
+                    <!-- Фильтры по статусам -->
                     <div class="mt-3">
-                        <a href="/purchase-orders" class="btn btn-outline-primary btn-sm me-2">Все заказы</a>
-                        <a href="/purchase-orders?status=DRAFT" class="btn btn-outline-secondary btn-sm me-2">Черновики</a>
-                        <a href="/purchase-orders?status=CONFIRMED" class="btn btn-outline-info btn-sm me-2">Подтверждённые</a>
-                        <a href="/purchase-orders?status=SHIPPED" class="btn btn-outline-warning btn-sm me-2">Отгруженные</a>
-                        <a href="/purchase-orders?status=DELIVERED" class="btn btn-outline-success btn-sm">Доставленные</a>
+                        <a href="/purchase-orders"
+                           class="btn btn-outline-primary btn-sm me-2"
+                           th:classappend="${selectedStatus == null ? 'active' : ''}">
+                            Все заказы
+                        </a>
+                        <a href="/purchase-orders?status=DRAFT"
+                           class="btn btn-outline-secondary btn-sm me-2"
+                           th:classappend="${selectedStatus == 'DRAFT' ? 'active' : ''}">
+                            Черновики
+                        </a>
+                        <a href="/purchase-orders?status=CONFIRMED"
+                           class="btn btn-outline-info btn-sm me-2"
+                           th:classappend="${selectedStatus == 'CONFIRMED' ? 'active' : ''}">
+                            Подтверждённые
+                        </a>
+                        <a href="/purchase-orders?status=SHIPPED"
+                           class="btn btn-outline-warning btn-sm me-2"
+                           th:classappend="${selectedStatus == 'SHIPPED' ? 'active' : ''}">
+                            Отгруженные
+                        </a>
+                        <a href="/purchase-orders?status=SENT"
+                           class="btn btn-outline-warning btn-sm me-2"
+                           th:classappend="${selectedStatus == 'SENT' ? 'active' : ''}">
+                            Отправленные
+                        </a>
+                        <a href="/purchase-orders?status=DELIVERED"
+                           class="btn btn-outline-success btn-sm me-2"
+                           th:classappend="${selectedStatus == 'DELIVERED' ? 'active' : ''}">
+                            Доставленные
+                        </a>
+                        <a href="/purchase-orders?status=CANCELLED"
+                           class="btn btn-outline-danger btn-sm"
+                           th:classappend="${selectedStatus == 'CANCELLED' ? 'active' : ''}">
+                            Отменённые
+                        </a>
                     </div>
                 </div>
             </div>
@@ -89,7 +119,8 @@
                                     order.status.name() == 'SHIPPED' ? 'bg-info' :
                                     order.status.name() == 'SENT' ? 'bg-warning text-dark' :
                                     order.status.name() == 'CONFIRMED' ? 'bg-primary' :
-                                    order.status.name() == 'DRAFT' ? 'bg-secondary' : 'bg-danger'}">
+                                    order.status.name() == 'DRAFT' ? 'bg-secondary' :
+                                    order.status.name() == 'CANCELLED' ? 'bg-danger' : 'bg-secondary'}">
                         <span th:text="${order.status.displayName}">Создан</span>
                     </span>
                 </td>
@@ -110,7 +141,13 @@
             </tr>
             <tr th:if="${orders.isEmpty()}">
                 <td colspan="6" class="text-center text-muted py-4">
-                    <i class="bi bi-info-circle"></i> Нет заказов. Создайте первый!
+                    <i class="bi bi-info-circle"></i>
+                    <span th:if="${selectedStatus != null}">
+                        Нет заказов со статусом "<span th:text="${selectedStatus}"></span>"
+                    </span>
+                    <span th:unless="${selectedStatus != null}">
+                        Нет заказов. Создайте первый!
+                    </span>
                 </td>
             </tr>
             </tbody>

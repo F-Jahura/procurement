@@ -95,17 +95,7 @@
                             <i class="bi bi-arrow-clockwise"></i>
                         </a>
                     </div>
-                    <div class="col-md-2 d-flex align-items-end">
-                        <div class="form-check mb-2">
-                            <input type="checkbox" class="form-check-input" id="lowStockOnly" name="lowStockOnly"
-                                   value="true"
-                                   th:checked="${lowStockOnly != null && lowStockOnly}">
-                            <label class="form-check-label" for="lowStockOnly">
-                                <i class="bi bi-exclamation-triangle text-danger"></i>
-                                Только критические
-                            </label>
-                        </div>
-                    </div>
+                    <!-- УДАЛЯЕМ чекбокс "Только критические" -->
                 </form>
             </div>
         </div>
@@ -137,7 +127,7 @@
                     <td th:text="${item.supplier != null ? item.supplier.name : '-'}">Поставщик</td>
                     <td th:text="'₽' + ${#numbers.formatDecimal(item.costPrice, 0, 'COMMA', 2, 'POINT')}">0</td>
                     <td>
-                        <span th:class="${item.currentStock != null && item.currentStock < 10 ? 'text-danger fw-bold' :
+                        <span th:class="${item.currentStock != null && item.currentStock <= item.minStock ? 'text-danger fw-bold' :
                                         item.currentStock != null && item.currentStock < 30 ? 'text-warning fw-bold' : ''}"
                               th:text="${item.currentStock != null ? item.currentStock : 0}">
                             0

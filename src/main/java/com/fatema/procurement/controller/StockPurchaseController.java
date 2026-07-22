@@ -15,6 +15,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/stock-purchase")
@@ -40,30 +41,43 @@ public class StockPurchaseController {
         // Получаем все товары
         List<Product> products = productService.getAllProducts();
 
-        // Фильтр "Только критические"
-        if (lowStockOnly != null && lowStockOnly) {
-            products = products.stream()
-                    .filter(p -> "Критично!".equals(productService.getStockStatusText(p)))
-                    .collect(java.util.stream.Collectors.toList());
+        // ===== ФИЛЬТРАЦИЯ ПО ОСТАТКАМ =====
+        if (lowStockOnly != null) {
+            if (lowStockOnly) {
+                // ТОЛЬКО КРИТИЧЕСКИЕ (остаток <= минимальный остаток)
+                products = products.stream()
+                        .filter(p -> p.getCurrentStock() != null && p.getMinStock() != null)
+                        .filter(p -> p.getCurrentStock() <= p.getMinStock())
+                        .collect(Collectors.toList());
+            } else {
+                // НОРМАЛЬНЫЙ ОСТАТОК (НЕ критические, т.е. остаток > минимальный остаток)
+                products = products.stream()
+                        .filter(p -> p.getCurrentStock() != null && p.getMinStock() != null)
+                        .filter(p -> p.getCurrentStock() > p.getMinStock())
+                        .collect(Collectors.toList());
+            }
         }
+        // Если lowStockOnly == null - показываем все товары (без фильтрации)
 
         // Фильтр по названию
         if (name != null && !name.isEmpty()) {
             String nameLower = name.toLowerCase();
             products = products.stream()
                     .filter(p -> p.getName() != null && p.getName().toLowerCase().contains(nameLower))
-                    .collect(java.util.stream.Collectors.toList());
+                    .collect(Collectors.toList());
         }
 
         // Фильтр по поставщику
         if (supplierId != null) {
             products = products.stream()
                     .filter(p -> p.getSupplier() != null && p.getSupplier().getId().equals(supplierId))
-                    .collect(java.util.stream.Collectors.toList());
+                    .collect(Collectors.toList());
         }
 
+        // Получаем всех поставщиков для выпадающего списка
         List<Supplier> suppliers = supplierService.getAllSuppliers();
 
+        // Добавляем атрибуты в модель
         model.addAttribute("products", products);
         model.addAttribute("suppliers", suppliers);
         model.addAttribute("selectedSupplierId", supplierId);
@@ -111,7 +125,7 @@ public class StockPurchaseController {
             redirectAttributes.addFlashAttribute("success", "Заказ успешно создан!");
 
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            redirectAttributes.addFlashAttribute("error", "Ошибка при создании заказа: " + e.getMessage());
         }
         return "redirect:/purchase-orders";
     }

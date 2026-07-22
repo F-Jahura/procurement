@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
+
 @Controller
 @RequestMapping("/purchase-orders")
 public class PurchaseOrderUIController {
@@ -21,9 +23,28 @@ public class PurchaseOrderUIController {
     private PurchaseOrderService purchaseOrderService;
 
     @GetMapping
-    public String listOrders(Model model) {
-        model.addAttribute("orders", purchaseOrderService.getAllOrders());
+    public String listOrders(
+            @RequestParam(required = false) String status,
+            Model model) {
+
+        List<PurchaseOrder> orders;
+
+        // Фильтрация по статусу
+        if (status != null && !status.isEmpty()) {
+            try {
+                OrderStatus orderStatus = OrderStatus.valueOf(status.toUpperCase());
+                orders = purchaseOrderService.getOrdersByStatus(orderStatus);
+            } catch (IllegalArgumentException e) {
+                // Если статус не найден - показываем все заказы
+                orders = purchaseOrderService.getAllOrders();
+            }
+        } else {
+            orders = purchaseOrderService.getAllOrders();
+        }
+
+        model.addAttribute("orders", orders);
         model.addAttribute("statuses", OrderStatus.values());
+        model.addAttribute("selectedStatus", status);
         return "purchase-orders/list";
     }
 

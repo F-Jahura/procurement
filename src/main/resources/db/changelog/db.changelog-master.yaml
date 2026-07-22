@@ -17,5 +17,9 @@ databaseChangeLog:
       file: db/changelog/changeset/insert-roles.yaml
   - include:
       file: db/changelog/changeset/add-order-item-timestamps.yaml
+  - include:
+      file: changeset/create-goods-receipts-table.yamlпше
+  - include:
+      file: changeset/create-receipt-items-table.yaml
   #- include:
       #file: db/changelog/changeset/add-product-price-fields.yaml
